@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Admin · FaceClash 2.0</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="admin-page">
+  <header class="bar">
+    <h1 class="brand">Face<span>Clash</span> <b class="ver">2.0</b> <small class="admin-tag">Admin</small></h1>
+    <div class="admin-top">
+      <a href="./" class="pill">← Back to site</a>
+      <button id="logout" class="pill" hidden>Log out</button>
+    </div>
+  </header>
+
+  <!-- Login -->
+  <section id="loginView" class="admin-login" hidden>
+    <form id="loginForm" class="login-card" novalidate>
+      <h2>Admin login</h2>
+      <label class="field">Password
+        <input type="password" id="loginPw" autocomplete="current-password" />
+      </label>
+      <p class="error" id="loginError" role="alert"></p>
+      <button type="submit" class="primary">Log in</button>
+      <p class="fine">First time? Set a password with <code>php scripts/set_admin_password.php</code></p>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <div id="dash" class="admin-shell" hidden>
+    <nav class="admin-nav" role="tablist">
+      <button class="anav active" data-pane="overview">Overview</button>
+      <button class="anav" data-pane="faces">Faces</button>
+      <button class="anav" data-pane="approvals">Approvals <span class="count" id="pendingCount" hidden>0</span></button>
+      <button class="anav" data-pane="votes">Vote log</button>
+      <button class="anav" data-pane="settings">Settings</button>
+      <button class="anav" data-pane="account">Account</button>
+    </nav>
+
+    <main class="admin-main">
+      <!-- Overview -->
+      <section class="pane" id="pane-overview">
+        <h2>Overview</h2>
+        <div class="tiles">
+          <div class="tile"><span class="tile-label">Total votes</span><span class="tile-value" id="ovTotal">0</span></div>
+          <div class="tile"><span class="tile-label">Votes, last 24h</span><span class="tile-value" id="ovToday">0</span></div>
+          <div class="tile"><span class="tile-label">Votes, last hour</span><span class="tile-value" id="ovHour">0</span></div>
+          <div class="tile"><span class="tile-label">Voters, last 24h</span><span class="tile-value" id="ovVoters">0</span></div>
+          <div class="tile"><span class="tile-label">Faces in the game</span><span class="tile-value" id="ovActive">0</span></div>
+          <div class="tile"><span class="tile-label">Hidden faces</span><span class="tile-value" id="ovHidden">0</span></div>
+          <div class="tile"><span class="tile-label">Awaiting approval</span><span class="tile-value" id="ovPending">0</span></div>
+          <div class="tile"><span class="tile-label">Uploaded by people</span><span class="tile-value" id="ovUploads">0</span></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><h3>Votes per hour, last 24 hours</h3></div>
+          <div id="ovChart" class="chart"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><h3>Downloads</h3><p>Spreadsheet-ready CSV files.</p></div>
+          <div class="btn-row">
+            <a class="secondary" href="api.php?action=admin_export&amp;type=leaderboard">Download leaderboard (CSV)</a>
+            <a class="secondary" href="api.php?action=admin_export&amp;type=votes">Download all votes (CSV)</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Faces -->
+      <section class="pane" id="pane-faces" hidden>
+        <div class="pane-head">
+          <h2>Faces</h2>
+          <div class="filters">
+            <input type="search" id="faceSearch" placeholder="Search by name" />
+            <select id="faceFilter">
+              <option value="all">All</option>
+              <option value="active">In the game</option>
+              <option value="hidden">Hidden</option>
+              <option value="pending">Awaiting approval</option>
+              <option value="visitor">Uploaded by visitors</option>
+              <option value="admin">Added by admin</option>
+              <option value="built-in">Built-in faces</option>
+            </select>
+            <button class="primary add-faces-btn" id="addFacesBtn">+ Add faces</button>
+          </div>
+        </div>
+        <p class="sub">Click a name to rename it. <b>Hide</b> takes a face out of the game without deleting it. <b>Reset</b> sets one face back to 0. Tick boxes to act on many at once.</p>
+        <div class="bulk-bar" id="bulkBar" hidden>
+          <span class="bulk-count"><b id="bulkCount">0</b> selected</span>
+          <button class="link select-matching" id="selectMatching" hidden></button>
+          <button class="chip ok" data-bulk="approve" id="bulkApprove">Approve</button>
+          <button class="chip" data-bulk="show">Show</button>
+          <button class="chip" data-bulk="hide">Hide</button>
+          <button class="chip" data-bulk="reset">Reset scores</button>
+          <button class="chip danger" data-bulk="remove">Delete</button>
+          <button class="link" id="bulkClear">Clear selection</button>
+        </div>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th class="check-col"><input type="checkbox" id="selectAll" aria-label="Select all faces on this page" /></th><th></th><th>Name</th><th>Status</th><th class="num">Score</th><th class="num">Won</th><th class="num">Lost</th><th class="num">Win %</th><th></th></tr></thead>
+            <tbody id="faceRows"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <label class="page-size">Rows per page
+            <select id="pageSize">
+              <option value="all">All</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+            </select>
+          </label>
+          <span class="page-info" id="pageInfo"></span>
+          <nav class="pager" id="pager" aria-label="Faces pages" hidden><span id="pageNums" class="page-nums"></span></nav>
+        </div>
+      </section>
+
+      <!-- Approvals -->
+      <section class="pane" id="pane-approvals" hidden>
+        <h2>Approvals</h2>
+        <p class="sub" id="approvalHint"></p>
+        <div id="approvalGrid" class="approval-grid"></div>
+      </section>
+
+      <!-- Votes -->
+      <section class="pane" id="pane-votes" hidden>
+        <h2>Vote log</h2>
+        <p class="sub">Newest first. "Voter" is a scrambled ID for the network the vote came from, so you can spot one source casting lots of votes. The real address is never stored.</p>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>#</th><th>When</th><th>Winner</th><th>Loser</th><th class="num">Points</th><th>Voter</th></tr></thead>
+            <tbody id="voteRows"></tbody>
+          </table>
+        </div>
+        <button id="moreVotes" class="link" hidden>Load older votes</button>
+      </section>
+
+      <!-- Settings -->
+      <section class="pane" id="pane-settings" hidden>
+        <h2>Settings</h2>
+        <form id="settingsForm" class="settings-card">
+          <label class="setting">
+            <span><b>Rounds per game</b><small>Matchups a visitor plays before seeing the Top 3 (3–30).</small></span>
+            <input type="number" id="setRounds" min="3" max="30" />
+          </label>
+          <label class="setting">
+            <span><b>Allow uploads</b><small>Show the "Add yourself" button on the site.</small></span>
+            <input type="checkbox" id="setUploads" class="switch" />
+          </label>
+          <label class="setting">
+            <span><b>Approve uploads first</b><small>New photos wait in Approvals until you accept them.</small></span>
+            <input type="checkbox" id="setApproval" class="switch" />
+          </label>
+          <div class="btn-row"><button type="submit" class="primary">Save settings</button></div>
+        </form>
+
+        <div class="danger-zone">
+          <h3>Danger zone</h3>
+          <p>Reset every face to 0 and delete all vote history and charts. Photos are kept.</p>
+          <button id="resetAll" class="primary danger-bg">Reset all scores…</button>
+        </div>
+      </section>
+
+      <!-- Account -->
+      <section class="pane" id="pane-account" hidden>
+        <h2>Account</h2>
+        <form id="pwForm" class="settings-card" novalidate>
+          <label class="field">Current password <input type="password" id="pwCurrent" autocomplete="current-password" /></label>
+          <label class="field">New password (8+ characters) <input type="password" id="pwNew" autocomplete="new-password" /></label>
+          <label class="field">Repeat new password <input type="password" id="pwNew2" autocomplete="new-password" /></label>
+          <p class="error" id="pwError" role="alert"></p>
+          <div class="btn-row"><button type="submit" class="primary">Change password</button></div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Admin: add faces -->
+  <dialog id="addFacesDlg" class="modal wide-modal">
+    <form id="addFacesForm" novalidate>
+      <h3>Add faces</h3>
+      <label class="drop multi-drop" id="aDrop" tabindex="0">
+        <input type="file" id="aFiles" accept="image/*" multiple hidden />
+        <span class="drop-text"><b>Drop photos here</b><br />or click to choose several at once · up to 50 per batch</span>
+      </label>
+      <div id="aItems" class="add-items"></div>
+      <label class="check">
+        <input type="checkbox" id="aRights" />
+        <span>I have permission to use these photos, and the people in them (if real) agreed to be rated.</span>
+      </label>
+      <p class="fine">Names come from the file names, and you can edit them. Faces go live immediately, starting at 0.</p>
+      <p class="error" id="aError" role="alert"></p>
+      <menu>
+        <button type="button" class="link" data-close>Cancel</button>
+        <button type="submit" class="primary" id="aSubmit" disabled>Add faces</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Shared confirm -->
+  <dialog id="confirmDlg" class="modal">
+    <h3 id="cTitle"></h3>
+    <p id="cText"></p>
+    <menu>
+      <button type="button" class="link" data-close>Cancel</button>
+      <button type="button" class="primary danger-bg" id="cOk">Confirm</button>
+    </menu>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="charts.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

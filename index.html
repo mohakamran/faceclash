@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceClash 2.0 — Who's hotter?</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="bar">
+    <h1 class="brand">Face<span>Clash</span> <b class="ver">2.0</b></h1>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-view="play" role="tab" aria-selected="true">Play</button>
+      <button class="tab" data-view="stats" role="tab" aria-selected="false">Stats &amp; charts</button>
+    </nav>
+    <button id="addBtn" class="pill">+ Add yourself</button>
+  </header>
+
+  <div class="layout" id="playView">
+    <main>
+      <!-- Voting -->
+      <section id="vote" class="screen">
+        <div class="game-top">
+          <div class="modes" role="radiogroup" aria-label="Game mode">
+            <button class="mode" data-mode="quick" role="radio">Quick <small>5</small></button>
+            <button class="mode" data-mode="classic" role="radio">Classic <small id="classicRounds">10</small></button>
+            <button class="mode" data-mode="marathon" role="radio">Marathon <small>25</small></button>
+          </div>
+          <div class="player" id="player" title="Your voter level goes up the more you vote">
+            <span class="player-badge" id="playerIcon">🌱</span>
+            <span class="player-text">
+              <b>Level <span id="playerLevel">1</span> · <span id="playerName">Newcomer</span></b>
+              <span class="player-bar"><i id="playerFill"></i></span>
+              <small id="playerNext">5 votes to next level</small>
+            </span>
+          </div>
+        </div>
+        <h2>Who's hotter? Click to choose.</h2>
+        <div class="progress" aria-label="Round progress">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p class="progress-text">Round <b id="round">1</b> of <b id="total">10</b> · or use ← →</p>
+
+        <div class="arena">
+          <button class="card" id="left" disabled>
+            <div class="img-wrap"><img alt="" /><span class="delta"></span></div>
+            <span class="name">&nbsp;</span>
+          </button>
+          <span class="or">OR</span>
+          <button class="card" id="right" disabled>
+            <div class="img-wrap"><img alt="" /><span class="delta"></span></div>
+            <span class="name">&nbsp;</span>
+          </button>
+        </div>
+
+        <p id="explain" class="explain" aria-live="polite">Pick one. Their score goes up, the other's goes down.</p>
+        <button id="skip" class="link">Skip this pair</button>
+      </section>
+
+      <!-- Results -->
+      <section id="results" class="screen hidden">
+        <h2>Top 3 right now</h2>
+        <p class="sub">Ranked by everyone's votes, including yours.</p>
+        <p class="level-summary" id="levelSummary"></p>
+        <ol id="podium" class="podium"></ol>
+        <div id="yourPicks" class="your-picks"></div>
+        <div class="actions">
+          <button id="again" class="primary">Play again</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Live leaderboard -->
+    <aside class="board-panel">
+      <div class="board-head">
+        <h3>Live leaderboard</h3>
+        <span class="live"><i></i> <span id="totalVotes">0</span> votes</span>
+      </div>
+      <div class="board-cols"><span>#</span><span></span><span>Wins</span><span>Score</span></div>
+      <ol id="board" class="board"></ol>
+
+      <details class="how" open>
+        <summary>What do the numbers mean?</summary>
+        <ul>
+          <li>Everyone starts at <b>0</b>. Scores are saved, so they carry on between visits.</li>
+          <li><b>Score</b>: winning a matchup adds points and losing takes points away, so a score can go below 0.</li>
+          <li>Each vote moves up to <b>32</b> points. Beating someone with a higher score earns more. Beating someone lower earns less. (This is the <a href="https://en.wikipedia.org/wiki/Elo_rating_system" target="_blank" rel="noopener">Elo system</a> used in chess.)</li>
+          <li><b>Wins</b>: matchups won, e.g. <i>7 of 10</i>. Click any face to see its history.</li>
+          <li><b>Tiers</b>: 🆕 New · ❄️ Cold (below −20) · ☀️ Warming up · 🌶️ Hot (20+) · 🔥 On fire (50+) · 👑 Legend (100+). 🔥3 means 3 wins in a row.</li>
+        </ul>
+      </details>
+
+      <div class="recent">
+        <h4>Latest votes</h4>
+        <ul id="recent"></ul>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- Stats & charts -->
+  <section id="statsView" class="stats hidden" aria-label="Stats and charts">
+    <div class="tiles">
+      <div class="tile"><span class="tile-label">Total votes</span><span class="tile-value" id="stTotal">0</span></div>
+      <div class="tile"><span class="tile-label">Votes in last 24h</span><span class="tile-value" id="stToday">0</span></div>
+      <div class="tile"><span class="tile-label">Faces</span><span class="tile-value" id="stFaces">0</span></div>
+      <div class="tile wide"><span class="tile-label">Biggest upset</span><span class="tile-value small" id="stUpset">None yet</span></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>Score race: the top 4 over time</h3>
+        <p>Each line is a face's score after every vote it was in. Hover to compare.</p>
+      </div>
+      <div id="raceChart" class="chart"></div>
+      <details class="table-view"><summary>Show as table</summary><div id="raceTable"></div></details>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>Votes per hour, last 24 hours</h3>
+        <p>How busy the site has been.</p>
+      </div>
+      <div id="hourChart" class="chart"></div>
+      <details class="table-view"><summary>Show as table</summary><div id="hourTable"></div></details>
+    </div>
+  </section>
+
+  <!-- One face's history -->
+  <dialog id="personDlg" class="modal wide-modal">
+    <div class="person-head">
+      <img id="pdImg" alt="" />
+      <div>
+        <h3 id="pdName"></h3>
+        <p id="pdMeta" class="sub"></p>
+        <span class="tier-chip big" id="pdTier"></span>
+      </div>
+      <button type="button" class="link close-x" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="tiles small-tiles">
+      <div class="tile"><span class="tile-label">Score</span><span class="tile-value" id="pdScore">0</span></div>
+      <div class="tile"><span class="tile-label">Rank</span><span class="tile-value" id="pdRank">–</span></div>
+      <div class="tile"><span class="tile-label">Won</span><span class="tile-value" id="pdWins">0</span></div>
+      <div class="tile"><span class="tile-label">Lost</span><span class="tile-value" id="pdLosses">0</span></div>
+      <div class="tile"><span class="tile-label">Peak score</span><span class="tile-value" id="pdPeak">0</span></div>
+      <div class="tile"><span class="tile-label">Win streak</span><span class="tile-value" id="pdStreak">0</span></div>
+      <div class="tile"><span class="tile-label">Best streak</span><span class="tile-value" id="pdBest">0</span></div>
+      <div class="tile"><span class="tile-label">Next tier</span><span class="tile-value small" id="pdNext">–</span></div>
+    </div>
+    <h4 class="mini-title">Recent form (last 10)</h4>
+    <div class="form-row" id="pdForm"></div>
+    <h4 class="mini-title">Score after each matchup</h4>
+    <div id="personChart" class="chart"></div>
+    <h4 class="mini-title">Most frequent opponents</h4>
+    <ul id="pdRivals" class="rivals"></ul>
+    <div class="person-actions">
+      <button type="button" class="link danger" id="pdRemoveMine" hidden>Remove my photo</button>
+      <button type="button" class="link danger" id="pdAdminDelete" hidden>Remove this face (admin)</button>
+    </div>
+  </dialog>
+
+  <!-- Generic confirm for removals -->
+  <dialog id="removeDlg" class="modal">
+    <h3 id="removeTitle">Remove this face?</h3>
+    <p id="removeText"></p>
+    <menu>
+      <button type="button" class="link" data-close>Cancel</button>
+      <button type="button" class="primary danger-bg" id="removeConfirm">Remove</button>
+    </menu>
+  </dialog>
+
+  <!-- Add yourself (opt-in) -->
+  <dialog id="addDlg" class="modal">
+    <form id="addForm" novalidate>
+      <h3>Add yourself</h3>
+      <label class="drop" id="drop" tabindex="0">
+        <input type="file" id="file" accept="image/*" hidden />
+        <img id="preview" alt="" hidden />
+        <span class="drop-text" id="dropText">
+          <b>Drop your photo here</b><br />or click to browse · paste works too
+        </span>
+      </label>
+      <label class="field">Display name
+        <input id="name" maxlength="24" autocomplete="nickname" placeholder="e.g. Sam" />
+      </label>
+      <label class="check">
+        <input type="checkbox" id="consent" />
+        <span>This is a photo of <b>me</b>, and I agree to it being rated by others.</span>
+      </label>
+      <p class="error" id="addError" role="alert"></p>
+      <menu>
+        <button type="button" class="link" data-close>Cancel</button>
+        <button type="submit" class="primary" id="addSubmit" disabled>Add me</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <footer>
+    AI-generated faces (not real people) from
+    <a href="https://thispersondoesnotexist.com" target="_blank" rel="noopener">thispersondoesnotexist.com</a>
+    · uploads are opt-in and can be removed any time
+    · <a class="footer-link" id="adminBtn" href="admin.html">Admin</a>
+  </footer>
+
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

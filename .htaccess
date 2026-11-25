@@ -1,0 +1,6 @@
+# Apache: keep internals private (Nginx users: see README)
+<FilesMatch "^(db|router)\.php$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 /\.git
+DirectoryIndex index.html

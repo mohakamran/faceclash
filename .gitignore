@@ -1,0 +1,12 @@
+# Runtime data: database, admin password hash, salt (created automatically)
+data/*
+!data/.htaccess
+
+# Photos uploaded by visitors and admins
+uploads/*
+!uploads/.htaccess
+
+# Local tooling / OS files
+.claude/
+.DS_Store
+*.log
